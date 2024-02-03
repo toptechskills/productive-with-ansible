@@ -1,0 +1,5 @@
+- name: First Ansible play
+  hosts: all
+  tasks:
+    - name: Run a shell command on the VM
+      shell: echo "Hello, World!" > ~/test

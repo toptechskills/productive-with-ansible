@@ -1,0 +1,41 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require "etc"
+
+PUBLIC_KEY_PATH = "CHANGEME".freeze
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  # Prevent mounting of local directory into vm
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  config.vm.provision "shell" do |shell|
+    shell.inline = <<~DOC
+      # Allow us to SSH using our public key rather than using `vagrant ssh`
+      echo '#{IO.read(PUBLIC_KEY_PATH)}' >> /home/vagrant/.ssh/authorized_keys
+    DOC
+  end
+
+  config.vm.provider "virtualbox" do |vb|
+    # Use the bare minimum amount of RAM
+    vb.memory = "512"
+
+    # Set CPUs to half the cores detected by Ruby, which should work best in
+    # most cases
+    vb.cpus = (Etc.nprocessors / 2.0).ceil
+
+    # Use the graphics controller recommended by VirtualBox
+    vb.customize ["modifyvm", :id, "--graphicscontroller", "vmsvga"]
+
+    # Disable audio since it's not required
+    vb.customize ["modifyvm", :id, "--audio", "none"]
+  end
+
+  # Define the VMs
+  config.vm.define "ansible" do |m|
+    m.vm.hostname = "ansible"
+    m.vm.network "private_network", ip: "10.0.0.2"
+  end
+end
